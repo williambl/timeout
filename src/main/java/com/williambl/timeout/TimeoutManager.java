@@ -45,7 +45,7 @@ public class TimeoutManager extends ServerConfigList<GameProfile, TimeoutEntry> 
     }
 
     public boolean playtimeOverThreshold(ServerPlayerEntity player) {
-        return getCurrentPlaytime(player) - getOrCreate(player).getLastPlaytime() > player.world.getGameRules().getInt(Timeout.MAX_HOURS);
+        return getCurrentPlaytime(player) - getOrCreate(player).getLastPlaytime() > 20 * 3600 * player.world.getGameRules().getInt(Timeout.MAX_HOURS);
     }
 
     public void ban(ServerPlayerEntity player) {
