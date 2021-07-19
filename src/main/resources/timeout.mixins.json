@@ -4,7 +4,8 @@
   "package": "com.williambl.timeout.mixin",
   "compatibilityLevel": "JAVA_16",
   "mixins": [
-    "ServerConfigEntryAccessor"
+    "ServerConfigEntryAccessor",
+    "ServerConfigListAccessor"
   ],
   "client": [
   ],

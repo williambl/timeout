@@ -1,23 +1,31 @@
 package com.williambl.timeout;
 
+import com.google.common.io.Files;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.authlib.GameProfile;
 import com.williambl.timeout.mixin.ServerConfigEntryAccessor;
+import com.williambl.timeout.mixin.ServerConfigListAccessor;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.*;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.Stats;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.JsonHelper;
+import net.minecraft.util.Util;
 
-import java.io.File;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+@SuppressWarnings("UnstableApiUsage")
 public class TimeoutManager extends ServerConfigList<GameProfile, TimeoutEntry> implements ServerTickEvents.StartTick {
     private LocalDateTime lastPlaytimeUpdate = LocalDateTime.now();
 
@@ -26,7 +34,71 @@ public class TimeoutManager extends ServerConfigList<GameProfile, TimeoutEntry> 
     }
 
     @Override
-    protected ServerConfigEntry<GameProfile> fromJson(JsonObject json) {
+    public void load() throws IOException {
+        if (this.getFile().exists()) {
+            BufferedReader bufferedReader = Files.newReader(this.getFile(), StandardCharsets.UTF_8);
+
+            try {
+                JsonObject jObject = getGson().fromJson(bufferedReader, JsonObject.class);
+                JsonArray jsonArray = jObject.getAsJsonArray("Entries");
+                this.getMap().clear();
+
+                for (JsonElement jsonElement : jsonArray) {
+                    JsonObject jsonObject = JsonHelper.asObject(jsonElement, "entry");
+                    TimeoutEntry serverConfigEntry = this.fromJson(jsonObject);
+                    //noinspection unchecked
+                    if (((ServerConfigEntryAccessor<GameProfile>)serverConfigEntry).invokeGetKey() != null) {
+                        //noinspection unchecked
+                        this.getMap().put(((ServerConfigEntryAccessor<GameProfile>)serverConfigEntry).invokeGetKey(), serverConfigEntry);
+                    }
+                }
+                lastPlaytimeUpdate = LocalDateTime.parse(jObject.get("LastPlaytimeUpdate").getAsString());
+
+            } catch (Throwable catchEmAll) {
+                try {
+                    bufferedReader.close();
+                } catch (Throwable var7) {
+                    catchEmAll.addSuppressed(var7);
+                }
+
+                throw catchEmAll;
+            }
+            bufferedReader.close();
+        }
+    }
+
+    @Override
+    public void save() throws IOException {
+        JsonArray jsonArray = new JsonArray();
+        getMap().values().stream()
+                .map(entry -> Util.make(new JsonObject(), entry::fromJson))
+                .forEach(jsonArray::add);
+
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.add("Entries", jsonArray);
+        jsonObject.addProperty("LastPlaytimeUpdate", lastPlaytimeUpdate.toString());
+
+        BufferedWriter bufferedWriter = Files.newWriter(this.getFile(), StandardCharsets.UTF_8);
+
+        try {
+            getGson().toJson(jsonObject, bufferedWriter);
+        } catch (Throwable catchEmAll) {
+            try {
+                bufferedWriter.close();
+            } catch (Throwable var5) {
+                catchEmAll.addSuppressed(var5);
+            }
+
+            throw catchEmAll;
+        }
+
+        if (bufferedWriter != null) {
+            bufferedWriter.close();
+        }
+    }
+
+    @Override
+    protected TimeoutEntry fromJson(JsonObject json) {
         return new TimeoutEntry(json);
     }
 
@@ -73,6 +145,15 @@ public class TimeoutManager extends ServerConfigList<GameProfile, TimeoutEntry> 
                 .collect(Collectors.toList());
 
         entries.forEach(this::add);
+    }
+
+    private Map<GameProfile, TimeoutEntry> getMap() {
+        //noinspection unchecked
+        return ((ServerConfigListAccessor<GameProfile, TimeoutEntry>)this).getMap();
+    }
+
+    private static Gson getGson() {
+        return ServerConfigListAccessor.getGSON();
     }
 
     static int getCurrentPlaytime(ServerPlayerEntity player) {

@@ -17,10 +17,12 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.world.GameRules;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Logger;
 
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
@@ -38,6 +40,13 @@ public class Timeout implements DedicatedServerModInitializer {
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
             timeouts = new TimeoutManager(TIMEOUT_FILE);
             ServerTickEvents.START_SERVER_TICK.register(timeouts);
+        });
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            try {
+                timeouts.save();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         });
         ServerTickEvents.START_SERVER_TICK.register(server -> pardonTimedOutBans(server.getPlayerManager().getUserBanList()));
         CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
