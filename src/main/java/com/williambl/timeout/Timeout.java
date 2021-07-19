@@ -1,8 +1,5 @@
 package com.williambl.timeout;
 
-import com.mojang.authlib.GameProfile;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -10,16 +7,13 @@ import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.minecraft.server.BannedPlayerEntry;
 import net.minecraft.server.BannedPlayerList;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.ServerConfigList;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.stat.Stats;
 import net.minecraft.world.GameRules;
 
 import java.io.File;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 
 public class Timeout implements ModInitializer {
 
