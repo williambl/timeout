@@ -10,9 +10,7 @@
   "icon": "assets/timeout/icon.png",
   "environment": "*",
   "entrypoints": {
-    "client": [
-    ],
-    "main": [
+    "server": [
       "com.williambl.timeout.Timeout"
     ]
   },
