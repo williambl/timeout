@@ -2,7 +2,9 @@ package com.williambl.timeout;
 
 import com.google.gson.JsonObject;
 import com.mojang.authlib.GameProfile;
+import com.williambl.timeout.mixin.ServerConfigEntryAccessor;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.*;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.Stats;
@@ -13,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class TimeoutManager extends ServerConfigList<GameProfile, TimeoutEntry> implements ServerTickEvents.StartTick {
@@ -60,6 +63,16 @@ public class TimeoutManager extends ServerConfigList<GameProfile, TimeoutEntry> 
                     add(new TimeoutEntry(player.getGameProfile(), lastPlaytimeUpdate, getCurrentPlaytime(player)))
             );
         }
+        //noinspection unchecked
+        var entries = values().stream()
+                .filter(entry -> entry.getLastUpdated().isBefore(lastPlaytimeUpdate))
+                .map(entry -> ((ServerConfigEntryAccessor<GameProfile>)entry).invokeGetKey().getId())
+                .map(server.getPlayerManager()::getPlayer)
+                .filter(Objects::nonNull)
+                .map(player -> new TimeoutEntry(player.getGameProfile(), lastPlaytimeUpdate, getCurrentPlaytime(player)))
+                .collect(Collectors.toList());
+
+        entries.forEach(this::add);
     }
 
     static int getCurrentPlaytime(ServerPlayerEntity player) {
