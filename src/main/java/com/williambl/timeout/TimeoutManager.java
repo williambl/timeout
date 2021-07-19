@@ -2,21 +2,17 @@ package com.williambl.timeout;
 
 import com.google.gson.JsonObject;
 import com.mojang.authlib.GameProfile;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.*;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.Stats;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
 
 import java.io.File;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.stream.Collectors;
 
 public class TimeoutManager extends ServerConfigList<GameProfile, TimeoutEntry> implements ServerTickEvents.StartTick {
@@ -60,12 +56,10 @@ public class TimeoutManager extends ServerConfigList<GameProfile, TimeoutEntry> 
         LocalDateTime now = LocalDateTime.now();
         if (lastPlaytimeUpdate.isBefore(now.minusWeeks(1))) {
             lastPlaytimeUpdate = now;
-            server.getPlayerManager().getPlayerList().forEach(this::updateLastWeekPlaytime);
+            server.getPlayerManager().getPlayerList().forEach(player ->
+                    add(new TimeoutEntry(player.getGameProfile(), lastPlaytimeUpdate, getCurrentPlaytime(player)))
+            );
         }
-    }
-
-    public void updateLastWeekPlaytime(ServerPlayerEntity player) {
-        add(new TimeoutEntry(player.getGameProfile(), lastPlaytimeUpdate, getCurrentPlaytime(player)));
     }
 
     static int getCurrentPlaytime(ServerPlayerEntity player) {
