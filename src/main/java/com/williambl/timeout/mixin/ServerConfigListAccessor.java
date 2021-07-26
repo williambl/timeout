@@ -12,7 +12,7 @@ import java.util.Map;
 @Mixin(ServerConfigList.class)
 public interface ServerConfigListAccessor<K, V extends ServerConfigEntry<K>> {
     @Accessor("map")
-    Map<K, V> getMap();
+    Map<String, V> getMap();
 
     @Accessor
     public static Gson getGSON() {

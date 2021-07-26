@@ -49,7 +49,7 @@ public class TimeoutManager extends ServerConfigList<GameProfile, TimeoutEntry> 
                     //noinspection unchecked
                     if (((ServerConfigEntryAccessor<GameProfile>)serverConfigEntry).invokeGetKey() != null) {
                         //noinspection unchecked
-                        this.getMap().put(((ServerConfigEntryAccessor<GameProfile>)serverConfigEntry).invokeGetKey(), serverConfigEntry);
+                        this.getMap().put(this.toString(((ServerConfigEntryAccessor<GameProfile>)serverConfigEntry).invokeGetKey()), serverConfigEntry);
                     }
                 }
                 lastPlaytimeUpdate = LocalDateTime.parse(jObject.get("LastPlaytimeUpdate").getAsString());
@@ -102,6 +102,11 @@ public class TimeoutManager extends ServerConfigList<GameProfile, TimeoutEntry> 
         return new TimeoutEntry(json);
     }
 
+    @Override
+    protected String toString(GameProfile gameProfile) {
+        return gameProfile.getId().toString();
+    }
+
     public TimeoutEntry getOrCreate(ServerPlayerEntity player) {
         TimeoutEntry entry = get(player.getGameProfile());
         if (entry == null) {
@@ -131,10 +136,20 @@ public class TimeoutManager extends ServerConfigList<GameProfile, TimeoutEntry> 
         LocalDateTime now = LocalDateTime.now();
         if (lastPlaytimeUpdate.isBefore(now.minusWeeks(1))) {
             lastPlaytimeUpdate = now;
-            server.getPlayerManager().getPlayerList().forEach(player ->
-                    add(new TimeoutEntry(player.getGameProfile(), lastPlaytimeUpdate, getCurrentPlaytime(player)))
+            server.getPlayerManager().getPlayerList().forEach(player -> {
+                        remove(player.getGameProfile());
+                        add(new TimeoutEntry(player.getGameProfile(), lastPlaytimeUpdate, getCurrentPlaytime(player)));
+                    }
             );
         }
+
+        /*
+        for (TimeoutEntry v : values()) {
+            System.out.println(v.getLastUpdated());
+            System.out.println(lastPlaytimeUpdate);
+            System.out.println(v.getLastUpdated().isBefore(lastPlaytimeUpdate));
+        }*/
+
         //noinspection unchecked
         var entries = values().stream()
                 .filter(entry -> entry.getLastUpdated().isBefore(lastPlaytimeUpdate))
@@ -144,10 +159,14 @@ public class TimeoutManager extends ServerConfigList<GameProfile, TimeoutEntry> 
                 .map(player -> new TimeoutEntry(player.getGameProfile(), lastPlaytimeUpdate, getCurrentPlaytime(player)))
                 .collect(Collectors.toList());
 
+        entries.forEach(entry -> {
+            //noinspection unchecked
+            this.remove(((ServerConfigEntryAccessor<GameProfile>)entry).invokeGetKey());
+        });
         entries.forEach(this::add);
     }
 
-    private Map<GameProfile, TimeoutEntry> getMap() {
+    private Map<String, TimeoutEntry> getMap() {
         //noinspection unchecked
         return ((ServerConfigListAccessor<GameProfile, TimeoutEntry>)this).getMap();
     }

@@ -39,6 +39,11 @@ public class Timeout implements DedicatedServerModInitializer {
     public void onInitializeServer() {
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
             timeouts = new TimeoutManager(TIMEOUT_FILE);
+            try {
+                timeouts.load();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             ServerTickEvents.START_SERVER_TICK.register(timeouts);
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
